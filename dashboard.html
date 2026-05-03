@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Finance Tracker - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-page">
+        <div class="container">
+            
+            <!-- Header with New Home Button Layout -->
+            <div class="dashboard-header">
+                <div class="header-main">
+                    <!-- Sleek Back to Home Pill -->
+                    <a href="index.html" class="btn-home-pill">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Back to Home
+                    </a>
+                    <h1>Student Finance Tracker</h1>
+                    <p class="subtitle">Manage your expenses, track savings, and achieve your financial goals</p>
+                </div>
+                <!-- User greeting is injected here automatically by app.js -->
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="expenses">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                        <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+                    </svg>
+                    <span>Expenses</span>
+                </button>
+                <button class="tab-btn" data-tab="budget">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2c.8-.5 1.5-1.5 1.5-3 0-1.5-.5-2.5-1.5-3-1-.5-2.5-.5-3.5 0"/>
+                    </svg>
+                    <span>Budget</span>
+                </button>
+                <button class="tab-btn" data-tab="savings">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="6"/>
+                        <circle cx="12" cy="12" r="2"/>
+                    </svg>
+                    <span>Savings</span>
+                </button>
+                <button class="tab-btn" data-tab="insights">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v18h18"/>
+                        <path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                    <span>Insights</span>
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="expenses" class="tab-content active">
+                <div class="grid-2">
+                    
+                    <!-- Add Expense Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Add New Expense</h3>
+                            <p class="card-description">Track your daily spending</p>
+                        </div>
+                        <div class="card-body">
+                            <form id="expense-form">
+                                <div class="form-group">
+                                    <label for="expense-description">Description</label>
+                                    <input type="text" id="expense-description" placeholder="e.g., Lunch at campus" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-amount">Amount ($)</label>
+                                    <input type="number" id="expense-amount" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-category">Category</label>
+                                    <select id="expense-category">
+                                        <option value="food">Food & Dining</option>
+                                        <option value="transport">Transportation</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="education">Education</option>
+                                        <option value="housing">Housing</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expense-date">Date</label>
+                                    <input type="date" id="expense-date" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add Expense
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- ✨ REDESIGNED: Monthly Overview Card ✨ -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Monthly Overview</h3>
+                            <p class="card-description" id="current-month"></p>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-grid-sm">
+                                <!-- Total Spent Box -->
+                                <div class="stat-box spent-box">
+                                    <div class="stat-icon-wrapper">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Total Spent</div>
+                                        <div class="stat-value" id="total-spent">$0.00</div>
+                                    </div>
+                                </div>
+                                <!-- Remaining Box -->
+                                <div class="stat-box" id="remaining-box">
+                                    <div class="stat-icon-wrapper">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
+                                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
+                                            <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Remaining</div>
+                                        <div class="stat-value" id="remaining-budget">$0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Progress Bar -->
+                            <div class="progress-container">
+                                <div class="progress-bar custom-progress">
+                                    <div class="progress-fill custom-fill" id="budget-progress"></div>
+                                </div>
+                                <p class="progress-text" id="budget-percentage">0% of monthly budget used</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Expenses Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Recent Expenses</h3>
+                        <p class="card-description">Your latest transactions</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="expenses-list" class="expenses-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Tab -->
+            <div id="budget" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Monthly Budget Overview</h3>
+                        <p class="card-description" id="budget-month"></p>
+                    </div>
+                    <div class="card-body">
+                        <div class="budget-overview">
+                            <div class="budget-header">
+                                <div>
+                                    <p class="budget-label">Total Monthly Budget</p>
+                                    <div class="budget-edit-group">
+                                        <input type="number" id="monthly-budget-input" step="0.01" value="1000">
+                                        <button class="btn btn-sm" onclick="updateMonthlyBudget()">Update</button>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="budget-label">Total Spent</p>
+                                    <p class="budget-value" id="budget-total-spent">$0.00</p>
+                                </div>
+                            </div>
+                            <div class="progress-bar custom-progress">
+                                <div class="progress-fill custom-fill" id="budget-overview-progress"></div>
+                            </div>
+                            <div class="budget-footer">
+                                <span id="budget-used-percent">0% used</span>
+                                <span id="budget-remaining-amount">$1000.00 remaining</span>
+                            </div>
+                        </div>
+
+                        <div class="categories-list" id="categories-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Savings Tab -->
+            <div id="savings" class="tab-content">
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>New Savings Goal</h3>
+                            <p class="card-description">Set a target to save towards</p>
+                        </div>
+                        <div class="card-body">
+                            <form id="goal-form">
+                                <div class="form-group">
+                                    <label for="goal-name">Goal Name</label>
+                                    <input type="text" id="goal-name" placeholder="e.g., New Laptop" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="goal-amount">Target Amount ($)</label>
+                                    <input type="number" id="goal-amount" step="0.01" placeholder="0.00" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="goal-deadline">Deadline</label>
+                                    <input type="date" id="goal-deadline" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add Goal
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card savings-overview">
+                        <div class="card-header">
+                            <h3>Total Savings</h3>
+                            <p class="card-description">Your progress overview</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="savings-stats">
+                                <div class="savings-stat-row">
+                                    <span>Current Savings</span>
+                                    <span id="total-savings">$0.00</span>
+                                </div>
+                                <div class="savings-stat-row">
+                                    <span>Total Target</span>
+                                    <span id="total-targets">$0.00</span>
+                                </div>
+                                <div class="progress-bar custom-progress">
+                                    <div class="progress-fill custom-fill" id="savings-progress" style="background: linear-gradient(90deg, #10B981 0%, #059669 100%);"></div>
+                                </div>
+                                <p class="progress-text" id="savings-percentage">0% of total goals</p>
+                            </div>
+                            <div class="active-goals">
+                                <span>Active Goals</span>
+                                <span class="active-goals-count" id="active-goals-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Your Savings Goals</h3>
+                        <p class="card-description">Track and contribute to your goals</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="goals-list" class="goals-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Tab -->
+            <div id="insights" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Spending Insights</h3>
+                        <p class="card-description">Key observations from your spending habits</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="insights-content" class="insights-content">
+                            <p>Add expenses to see insights about your spending patterns.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
