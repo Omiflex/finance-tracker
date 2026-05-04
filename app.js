@@ -10,6 +10,8 @@ const state = {
     food: 300, transport: 150, entertainment: 100,
     education: 200, housing: 400, other: 100,
   },
+  customCategories: {}, // Stores user-added categories
+  lastProcessedMonth: null // Used for auto-savings rollover
 };
 
 const CATEGORY_META = {
@@ -20,6 +22,9 @@ const CATEGORY_META = {
   housing:       { label: "Housing",          color: "#EF4444", dot: "#EF4444" },
   other:         { label: "Other",            color: "#6B7280", dot: "#6B7280" },
 };
+
+let currentViewMonth = new Date().toISOString().slice(0, 7); // Defaults to YYYY-MM
+let editingExpenseId = null;
 
 // ─── LOCAL STORAGE "DATABASE" ────────────────────────────────
 function save() {
@@ -43,8 +48,45 @@ function load() {
     state.savingsGoals = parsed.savingsGoals || [];
     state.monthlyBudget = parsed.monthlyBudget || 1000;
     if (parsed.categoryBudgets) state.categoryBudgets = parsed.categoryBudgets;
+    if (parsed.customCategories) state.customCategories = parsed.customCategories;
+    if (parsed.lastProcessedMonth) state.lastProcessedMonth = parsed.lastProcessedMonth;
   }
+  
+  Object.assign(CATEGORY_META, state.customCategories); // Inject custom categories into META
   showUserInHeader(user.firstName);
+  updateCategoryDropdown();
+  processAutoSavings(); // Check for month rollover
+  renderAll();
+}
+
+// ─── AUTO-SAVINGS (MONTH ROLLOVER) ───────────────────────────
+function processAutoSavings() {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (!state.lastProcessedMonth) {
+        state.lastProcessedMonth = currentMonth;
+        save();
+        return;
+    }
+    
+    // If we've entered a new month
+    if (state.lastProcessedMonth < currentMonth) {
+        const lastMonthExpenses = state.expenses.filter(e => e.date.startsWith(state.lastProcessedMonth));
+        const spent = lastMonthExpenses.reduce((s, e) => s + e.amount, 0);
+        const remaining = state.monthlyBudget - spent;
+
+        if (remaining > 0) {
+            let autoGoal = state.savingsGoals.find(g => g.name === "Auto-Rollover Savings");
+            if (!autoGoal) {
+                autoGoal = { id: Date.now(), name: "Auto-Rollover Savings", target: 0, deadline: '', saved: 0 };
+                state.savingsGoals.push(autoGoal);
+            }
+            autoGoal.target += remaining; 
+            autoGoal.saved += remaining;
+            showToast(`Month ended! $${remaining} auto-saved from last month.`, "success");
+        }
+        state.lastProcessedMonth = currentMonth;
+        save();
+    }
 }
 
 // ─── AUTHENTICATION ──────────────────────────────────────────
@@ -99,6 +141,19 @@ function logout() {
 }
 
 // ─── EXPENSES ────────────────────────────────────────────────
+window.changeViewMonth = function() {
+    currentViewMonth = document.getElementById("filter-month").value;
+    renderAll();
+}
+
+function updateCategoryDropdown() {
+    const select = document.getElementById("expense-category");
+    if (!select) return;
+    select.innerHTML = Object.keys(CATEGORY_META).map(key => 
+        `<option value="${key}">${CATEGORY_META[key].label}</option>`
+    ).join("");
+}
+
 function initExpenseForm() {
   const form = document.getElementById("expense-form");
   if (!form) return;
@@ -111,13 +166,38 @@ function initExpenseForm() {
     const cat    = document.getElementById("expense-category").value;
     const date   = document.getElementById("expense-date").value;
 
-    state.expenses.unshift({ id: Date.now(), description: desc, amount, category: cat, date });
+    if (editingExpenseId) {
+        const idx = state.expenses.findIndex(exp => exp.id === editingExpenseId);
+        if (idx !== -1) {
+            state.expenses[idx] = { id: editingExpenseId, description: desc, amount, category: cat, date };
+        }
+        editingExpenseId = null;
+        document.getElementById("expense-submit-btn").innerHTML = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Expense`;
+        showToast("Expense updated!");
+    } else {
+        state.expenses.unshift({ id: Date.now(), description: desc, amount, category: cat, date });
+        showToast("Expense added!");
+    }
+    
     save();
     renderAll();
     form.reset();
     document.getElementById("expense-date").valueAsDate = new Date();
-    showToast("Expense added!");
   });
+}
+
+window.editExpense = function(id) {
+    const exp = state.expenses.find(e => e.id === id);
+    if(!exp) return;
+    
+    document.getElementById("expense-description").value = exp.description;
+    document.getElementById("expense-amount").value = exp.amount;
+    document.getElementById("expense-category").value = exp.category;
+    document.getElementById("expense-date").value = exp.date;
+    
+    editingExpenseId = id;
+    document.getElementById("expense-submit-btn").innerHTML = `Update Expense`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function deleteExpense(id) {
@@ -146,6 +226,32 @@ window.updateCategoryBudget = function(key) {
     showToast(`${CATEGORY_META[key].label} budget updated!`);
   }
 };
+
+window.addNewCategory = function() {
+    const name = document.getElementById("new-category-name").value.trim();
+    if (!name) return;
+    
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (CATEGORY_META[key]) {
+        showToast("Category already exists!", "error");
+        return;
+    }
+    
+    const colors = ['#F43F5E', '#8B5CF6', '#14B8A6', '#F59E0B', '#EC4899', '#0EA5E9'];
+    const color = colors[Object.keys(CATEGORY_META).length % colors.length];
+    
+    state.customCategories[key] = { label: name, color: color, dot: color };
+    state.categoryBudgets[key] = 0; // Default budget amount
+    
+    Object.assign(CATEGORY_META, state.customCategories); // Refresh runtime META
+    save(); 
+    updateCategoryDropdown();
+    renderBudget(); 
+    renderInsights();
+    
+    document.getElementById("new-category-name").value = '';
+    showToast("Category added!");
+}
 
 // ─── GOALS ───────────────────────────────────────────────────
 function initGoalForm() {
@@ -184,15 +290,11 @@ window.deleteGoal = function(id) {
 // ─── RENDERING & UTILITIES ───────────────────────────────────
 function fmt(amount) { return "$" + Number(amount).toFixed(2); }
 function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
-function monthName() { return new Date().toLocaleString("default", { month: "long", year: "numeric" }); }
 function escHtml(str) { return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]); }
 
 function getMonthExpenses() {
-  const now = new Date();
-  return state.expenses.filter(e => {
-    const d = new Date(e.date + "T00:00:00");
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
+  // Uses selected view month to fetch expenses
+  return state.expenses.filter(e => e.date.startsWith(currentViewMonth));
 }
 
 function totalSpentThisMonth() {
@@ -235,7 +337,10 @@ function showUserInHeader(firstName) {
 }
 
 function renderExpenses() {
-  document.getElementById("current-month").textContent = monthName();
+  const d = new Date(currentViewMonth + "-01T00:00:00");
+  document.getElementById("current-month").textContent = d.toLocaleString("default", { month: "long", year: "numeric" });
+  document.getElementById("filter-month").value = currentViewMonth;
+
   const spent = totalSpentThisMonth(); const budget = state.monthlyBudget;
   const remaining = budget - spent; const pct = budget > 0 ? clamp((spent / budget) * 100, 0, 100) : 0;
   
@@ -246,17 +351,21 @@ function renderExpenses() {
   document.getElementById("remaining-box").style.background = remaining < 0 ? "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)" : "linear-gradient(135deg, #22C55E 0%, #10B981 100%)";
   
   const list = document.getElementById("expenses-list");
-  if (state.expenses.length === 0) { list.innerHTML = `<div class="empty-state"><p>📭 No expenses yet</p></div>`; return; }
+  const monthData = getMonthExpenses();
+  if (monthData.length === 0) { list.innerHTML = `<div class="empty-state"><p>📭 No expenses yet</p></div>`; return; }
   
-  list.innerHTML = state.expenses.map(expense => {
+  list.innerHTML = monthData.map(expense => {
     const meta = CATEGORY_META[expense.category] || CATEGORY_META.other;
-    const d = new Date(expense.date + "T00:00:00");
-    return `<div class="expense-item" id="exp-${expense.id}"><div class="expense-info"><div class="expense-header"><span class="expense-title">${escHtml(expense.description)}</span><span class="expense-category" style="background:${meta.color}22;color:${meta.color}">${meta.label}</span></div><div class="expense-date">📅 ${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div></div><div class="expense-actions"><span class="expense-amount">${fmt(expense.amount)}</span><button class="btn-delete" onclick="deleteExpense(${expense.id})" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></div></div>`;
+    const dt = new Date(expense.date + "T00:00:00");
+    return `<div class="expense-item" id="exp-${expense.id}"><div class="expense-info"><div class="expense-header"><span class="expense-title">${escHtml(expense.description)}</span><span class="expense-category" style="background:${meta.color}22;color:${meta.color}">${meta.label}</span></div><div class="expense-date">📅 ${dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div></div><div class="expense-actions"><span class="expense-amount">${fmt(expense.amount)}</span>
+    <button class="btn-delete" style="color: #3B82F6" onclick="editExpense(${expense.id})" title="Edit">✎</button>
+    <button class="btn-delete" onclick="deleteExpense(${expense.id})" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></div></div>`;
   }).join("");
 }
 
 function renderBudget() {
-  document.getElementById("budget-month").textContent = monthName();
+  const d = new Date(currentViewMonth + "-01T00:00:00");
+  document.getElementById("budget-month").textContent = d.toLocaleString("default", { month: "long", year: "numeric" });
   document.getElementById("monthly-budget-input").value = state.monthlyBudget;
   const spent = totalSpentThisMonth(); const budget = state.monthlyBudget;
   const remaining = budget - spent; const pct = budget > 0 ? clamp((spent / budget) * 100, 0, 100) : 0;
@@ -300,17 +409,47 @@ function renderInsights() {
   const content = document.getElementById("insights-content");
   if (state.expenses.length === 0) { content.innerHTML = `<div class="empty-state"><p>📊 No data yet</p></div>`; return; }
   
+  // Set up chart UI container
+  content.innerHTML = `
+      <canvas id="expenseChart" style="width:100%; max-height:300px; margin-bottom: 2rem;"></canvas>
+      <div id="insight-text-list"></div>
+  `;
+
+  // Render Graph via Chart.js
+  const ctx = document.getElementById('expenseChart');
+  const monthlyData = {};
+  
+  // Group all historical expenses by month
+  state.expenses.forEach(e => {
+      const month = e.date.slice(0, 7);
+      monthlyData[month] = (monthlyData[month] || 0) + e.amount;
+  });
+  
+  const labels = Object.keys(monthlyData).sort();
+  const data = labels.map(m => monthlyData[m]);
+
+  if(window.chartInstance) window.chartInstance.destroy();
+  window.chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+          labels: labels,
+          datasets: [{ label: 'Total Spend ($)', data: data, backgroundColor: '#3B82F6', borderRadius: 4 }]
+      },
+      options: { responsive: true }
+  });
+
+  // Calculate insights logic based on selected view month
   const spent = totalSpentThisMonth(); const budget = state.monthlyBudget;
   const insights = [];
   
   if (budget > 0) {
     const pct = (spent / budget) * 100;
-    if (pct >= 100) insights.push({ dot: "red", text: `You've exceeded your monthly budget by ${fmt(spent - budget)}.` });
+    if (pct >= 100) insights.push({ dot: "red", text: `You've exceeded your monthly budget for this month by ${fmt(spent - budget)}.` });
     else if (pct >= 80) insights.push({ dot: "orange", text: `You're at ${pct.toFixed(0)}% of your monthly budget. Tread carefully!` });
     else insights.push({ dot: "green", text: `Great job! You've used ${pct.toFixed(0)}% of your budget this month.` });
   }
   
-  content.innerHTML = insights.map(i => `<div class="insight-item"><div class="insight-dot ${i.dot}"></div><p class="insight-text">${i.text}</p></div>`).join("");
+  document.getElementById("insight-text-list").innerHTML = insights.map(i => `<div class="insight-item"><div class="insight-dot ${i.dot}"></div><p class="insight-text">${i.text}</p></div>`).join("");
 }
 
 function renderAll() { 

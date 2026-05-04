@@ -15,7 +15,6 @@
                 <p class="card-description">Access your finance dashboard</p>
             </div>
             <div class="card-body">
-                <!-- Ensure the form has the correct ID matching app.js -->
                 <form id="login-form">
                     <div class="form-group">
                         <label for="email">University Email</label>
@@ -23,7 +22,8 @@
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" placeholder="••••••••" required style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem;">
+                        <!-- Removed the inline style attribute here -->
+                        <input type="password" id="password" placeholder="••••••••" required>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; margin-bottom: 0;">
@@ -31,7 +31,6 @@
                         </label>
                         <a href="#" style="font-size: 0.875rem; color: #2563EB; text-decoration: none;">Forgot password?</a>
                     </div>
-                    <!-- Must be a submit button, NOT a link -->
                     <button type="submit" class="btn btn-primary btn-block">
                         Login to Dashboard
                     </button>
@@ -49,7 +48,6 @@
         </div>
     </div>
 
-    <!-- Connects to your LocalStorage Javascript -->
     <script src="app.js"></script>
 </body>
 </html>
