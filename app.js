@@ -1,7 +1,3 @@
-// ============================================================
-// Student Finance Tracker - app.js (LocalStorage Backend)
-// ============================================================
-
 const state = {
   expenses: [],
   savingsGoals: [],
