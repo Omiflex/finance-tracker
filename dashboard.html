@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Finance Tracker - Dashboard</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Added Chart.js for the Insights graph -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -42,9 +41,12 @@
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
                     <span>Insights</span>
                 </button>
+                <button class="tab-btn" data-tab="achievements">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                    <span>Achievements</span>
+                </button>
             </div>
 
-            <!-- Expenses Tab -->
             <div id="expenses" class="tab-content active">
                 <div class="grid-2">
                     <div class="card">
@@ -65,8 +67,7 @@
                                 <div class="form-group">
                                     <label for="expense-category">Category</label>
                                     <select id="expense-category">
-                                        <!-- Populated via JS to support custom categories -->
-                                    </select>
+                                        </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="expense-date">Date</label>
@@ -81,7 +82,6 @@
                     </div>
 
                     <div class="card">
-                        <!-- Added Month Filter here -->
                         <div class="card-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
                                 <h3>Monthly Overview</h3>
@@ -132,7 +132,6 @@
                 </div>
             </div>
 
-            <!-- Budget Tab -->
             <div id="budget" class="tab-content">
                 <div class="card">
                     <div class="card-header">
@@ -165,7 +164,6 @@
 
                         <div class="categories-list" id="categories-list"></div>
                         
-                        <!-- Added Custom Category Form -->
                         <div class="add-category-wrapper" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
                             <h4>Add Custom Category</h4>
                             <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
@@ -177,7 +175,6 @@
                 </div>
             </div>
 
-            <!-- Savings Tab (Unchanged HTML structure) -->
             <div id="savings" class="tab-content">
                 <div class="grid-2">
                     <div class="card">
@@ -237,8 +234,8 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h3>Your Savings Goals</h3>
-                        <p class="card-description">Track and contribute to your goals</p>
+                        <h3>Active Savings Goals</h3>
+                        <p class="card-description">Track and contribute to your ongoing goals</p>
                     </div>
                     <div class="card-body">
                         <div id="goals-list" class="goals-list"></div>
@@ -246,7 +243,6 @@
                 </div>
             </div>
 
-            <!-- Insights Tab -->
             <div id="insights" class="tab-content">
                 <div class="card">
                     <div class="card-header">
@@ -255,12 +251,25 @@
                     </div>
                     <div class="card-body">
                         <div id="insights-content" class="insights-content">
-                            <!-- Populated dynamically via JS Chart -->
                             <p>Add expenses to see insights about your spending patterns.</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div id="achievements" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Completed Goals</h3>
+                        <p class="card-description">Celebrate your financial milestones</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="completed-goals-list" class="goals-list">
+                            </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 

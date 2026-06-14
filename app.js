@@ -6,8 +6,8 @@ const state = {
     food: 300, transport: 150, entertainment: 100,
     education: 200, housing: 400, other: 100,
   },
-  customCategories: {}, // Stores user-added categories
-  lastProcessedMonth: null // Used for auto-savings rollover
+  customCategories: {}, 
+  lastProcessedMonth: null 
 };
 
 const CATEGORY_META = {
@@ -19,10 +19,10 @@ const CATEGORY_META = {
   other:         { label: "Other",            color: "#6B7280", dot: "#6B7280" },
 };
 
-let currentViewMonth = new Date().toISOString().slice(0, 7); // Defaults to YYYY-MM
+let currentViewMonth = new Date().toISOString().slice(0, 7); 
 let editingExpenseId = null;
 
-// ─── LOCAL STORAGE "DATABASE" ────────────────────────────────
+// ─── LOCAL STORAGE "DATABASE" ───────────────────────────────
 function save() {
   const user = JSON.parse(localStorage.getItem("sft_current_user"));
   if (!user) return;
@@ -48,10 +48,10 @@ function load() {
     if (parsed.lastProcessedMonth) state.lastProcessedMonth = parsed.lastProcessedMonth;
   }
   
-  Object.assign(CATEGORY_META, state.customCategories); // Inject custom categories into META
+  Object.assign(CATEGORY_META, state.customCategories); 
   showUserInHeader(user.firstName);
   updateCategoryDropdown();
-  processAutoSavings(); // Check for month rollover
+  processAutoSavings(); 
   renderAll();
 }
 
@@ -64,7 +64,6 @@ function processAutoSavings() {
         return;
     }
     
-    // If we've entered a new month
     if (state.lastProcessedMonth < currentMonth) {
         const lastMonthExpenses = state.expenses.filter(e => e.date.startsWith(state.lastProcessedMonth));
         const spent = lastMonthExpenses.reduce((s, e) => s + e.amount, 0);
@@ -204,7 +203,7 @@ function deleteExpense(id) {
   showToast("Expense deleted.", "info");
 }
 
-// ─── BUDGETS ─────────────────────────────────────────────────
+// ─── BUDGETS & CATEGORIES ────────────────────────────────────
 window.updateMonthlyBudget = function() {
   const amount = parseFloat(document.getElementById("monthly-budget-input").value);
   if (!isNaN(amount) && amount >= 0) {
@@ -237,9 +236,9 @@ window.addNewCategory = function() {
     const color = colors[Object.keys(CATEGORY_META).length % colors.length];
     
     state.customCategories[key] = { label: name, color: color, dot: color };
-    state.categoryBudgets[key] = 0; // Default budget amount
+    state.categoryBudgets[key] = 0; 
     
-    Object.assign(CATEGORY_META, state.customCategories); // Refresh runtime META
+    Object.assign(CATEGORY_META, state.customCategories); 
     save(); 
     updateCategoryDropdown();
     renderBudget(); 
@@ -249,7 +248,25 @@ window.addNewCategory = function() {
     showToast("Category added!");
 }
 
-// ─── GOALS ───────────────────────────────────────────────────
+window.deleteCustomCategory = function(key) {
+    if (!state.customCategories[key]) return; 
+    if (!confirm(`Are you sure you want to delete the "${state.customCategories[key].label}" category? Expenses will be moved to 'Other'.`)) return;
+    
+    state.expenses.forEach(e => {
+        if (e.category === key) e.category = 'other';
+    });
+
+    delete state.customCategories[key];
+    delete state.categoryBudgets[key];
+    delete CATEGORY_META[key];
+    
+    save();
+    updateCategoryDropdown();
+    renderAll();
+    showToast("Category deleted.", "info");
+}
+
+// ─── GOALS & ACHIEVEMENTS ────────────────────────────────────
 function initGoalForm() {
   const form = document.getElementById("goal-form");
   if (!form) return;
@@ -260,7 +277,7 @@ function initGoalForm() {
     const deadline = document.getElementById("goal-deadline").value;
 
     state.savingsGoals.push({ id: Date.now(), name, target, deadline, saved: 0 });
-    save(); renderSavings(); renderInsights(); form.reset();
+    save(); renderSavings(); renderInsights(); renderAchievements(); form.reset();
     showToast("Goal created!");
   });
 }
@@ -271,15 +288,19 @@ window.contributeToGoal = function(id) {
   const goal = state.savingsGoals.find(g => g.id === id);
   if (goal) {
     goal.saved = Math.min(goal.saved + amount, goal.target);
-    save(); renderSavings(); renderInsights();
-    showToast(`Added $${amount}!`);
+    save(); renderSavings(); renderInsights(); renderAchievements();
+    if (goal.saved >= goal.target) {
+        showToast(`🎉 Congratulations! You achieved your goal: ${goal.name}!`);
+    } else {
+        showToast(`Added $${amount}!`);
+    }
   }
 };
 
 window.deleteGoal = function(id) {
   if (!confirm("Delete goal?")) return;
   state.savingsGoals = state.savingsGoals.filter(g => g.id !== id);
-  save(); renderSavings(); renderInsights();
+  save(); renderSavings(); renderInsights(); renderAchievements();
   showToast("Goal deleted.");
 };
 
@@ -289,7 +310,6 @@ function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
 function escHtml(str) { return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]); }
 
 function getMonthExpenses() {
-  // Uses selected view month to fetch expenses
   return state.expenses.filter(e => e.date.startsWith(currentViewMonth));
 }
 
@@ -376,46 +396,82 @@ function renderBudget() {
     const meta = CATEGORY_META[key]; const catBudget = state.categoryBudgets[key] || 0;
     const catSpent = byCategory[key] || 0; const catPct = catBudget > 0 ? clamp((catSpent / catBudget) * 100, 0, 100) : 0;
     const isOver = catSpent > catBudget && catBudget > 0;
-    return `<div class="category-item"><div class="category-header"><div class="category-name-group"><div class="category-dot" style="background:${meta.dot}"></div><div><div class="category-name">${meta.label}</div><div class="category-amount">${fmt(catSpent)} of ${fmt(catBudget)} budget</div></div></div><div style="text-align:right"><div class="budget-edit-group"><input type="number" id="cat-budget-${key}" value="${catBudget}" step="0.01" style="width:100px"><button class="btn btn-sm" onclick="updateCategoryBudget('${key}')">Set</button></div>${isOver ? `<div class="over-budget" style="font-size:0.75rem;margin-top:0.25rem">⚠ Over budget by ${fmt(catSpent - catBudget)}</div>` : ""}</div></div><div class="category-progress"><div class="progress-bar" style="margin:0.25rem 0"><div class="progress-fill ${isOver ? "over-budget" : ""}" style="width:${catPct}%;background:${meta.color}"></div></div><div class="category-stats"><span>${catPct.toFixed(0)}% used</span><span>${fmt(Math.max(catBudget - catSpent, 0))} left</span></div></div></div>`;
+    
+    // Add delete option for manually added categories
+    const isCustom = state.customCategories && state.customCategories[key];
+    const deleteBtn = isCustom ? `<button class="btn btn-sm" style="background:transparent; border:none; color:#EF4444; padding:0 0.5rem; cursor:pointer;" onclick="deleteCustomCategory('${key}')" title="Delete Category">🗑️</button>` : '';
+
+    return `<div class="category-item"><div class="category-header"><div class="category-name-group"><div class="category-dot" style="background:${meta.dot}"></div><div><div class="category-name" style="display:flex; align-items:center;">${meta.label} ${deleteBtn}</div><div class="category-amount">${fmt(catSpent)} of ${fmt(catBudget)} budget</div></div></div><div style="text-align:right"><div class="budget-edit-group"><input type="number" id="cat-budget-${key}" value="${catBudget}" step="0.01" style="width:100px"><button class="btn btn-sm" onclick="updateCategoryBudget('${key}')">Set</button></div>${isOver ? `<div class="over-budget" style="font-size:0.75rem;margin-top:0.25rem">⚠ Over budget by ${fmt(catSpent - catBudget)}</div>` : ""}</div></div><div class="category-progress"><div class="progress-bar" style="margin:0.25rem 0"><div class="progress-fill ${isOver ? "over-budget" : ""}" style="width:${catPct}%;background:${meta.color}"></div></div><div class="category-stats"><span>${catPct.toFixed(0)}% used</span><span>${fmt(Math.max(catBudget - catSpent, 0))} left</span></div></div></div>`;
   }).join("");
 }
 
 function renderSavings() {
   const goals = state.savingsGoals;
-  const totalSaved = goals.reduce((s, g) => s + g.saved, 0); const totalTarget = goals.reduce((s, g) => s + g.target, 0);
+  const totalSaved = goals.reduce((s, g) => s + g.saved, 0); 
+  const totalTarget = goals.reduce((s, g) => s + g.target, 0);
   const pct = totalTarget > 0 ? clamp((totalSaved / totalTarget) * 100, 0, 100) : 0;
   
   document.getElementById("total-savings").textContent = fmt(totalSaved); 
   document.getElementById("total-targets").textContent = fmt(totalTarget);
   document.getElementById("savings-progress").style.width = pct + "%"; 
-  document.getElementById("savings-percentage").textContent = pct.toFixed(0) + "% of total goals";
-  document.getElementById("active-goals-count").textContent = goals.filter(g => g.saved < g.target).length;
+  document.getElementById("savings-percentage").textContent = pct.toFixed(0) + "% of all goals tracked";
+  
+  // Filter for ONLY active goals to display in the Savings tab
+  const activeGoals = goals.filter(g => g.saved < g.target);
+  document.getElementById("active-goals-count").textContent = activeGoals.length;
   
   const list = document.getElementById("goals-list");
-  if (goals.length === 0) { list.innerHTML = `<div class="empty-state"><p>🎯 No savings goals yet</p></div>`; return; }
+  if (activeGoals.length === 0) { list.innerHTML = `<div class="empty-state"><p>🎯 No active savings goals currently</p></div>`; return; }
   
-  list.innerHTML = goals.map(goal => {
+  list.innerHTML = activeGoals.map(goal => {
     const goalPct = goal.target > 0 ? clamp((goal.saved / goal.target) * 100, 0, 100) : 0;
-    const isComplete = goal.saved >= goal.target;
-    return `<div class="goal-item" id="goal-${goal.id}"><div class="goal-header"><div class="goal-info"><h4>${escHtml(goal.name)} ${isComplete ? "✅" : ""}</h4><p>Target: ${fmt(goal.target)}</p></div><button class="btn-delete" onclick="deleteGoal(${goal.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div><div class="goal-progress"><div class="goal-progress-header"><span style="font-weight:600">${fmt(goal.saved)} saved</span><span>${goalPct.toFixed(0)}%</span></div><div class="progress-bar" style="margin:0.25rem 0"><div class="progress-fill" style="width:${goalPct}%;background:${isComplete ? "#22C55E" : "#3B82F6"}"></div></div></div>${!isComplete ? `<div class="goal-contribution"><input type="number" id="contrib-${goal.id}" placeholder="Add ($)"><button class="btn btn-sm btn-primary" onclick="contributeToGoal(${goal.id})">Add</button></div>` : ""}</div>`;
+    return `<div class="goal-item" id="goal-${goal.id}"><div class="goal-header"><div class="goal-info"><h4>${escHtml(goal.name)}</h4><p>Target: ${fmt(goal.target)}</p></div><button class="btn-delete" onclick="deleteGoal(${goal.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button></div><div class="goal-progress"><div class="goal-progress-header"><span style="font-weight:600">${fmt(goal.saved)} saved</span><span>${goalPct.toFixed(0)}%</span></div><div class="progress-bar" style="margin:0.25rem 0"><div class="progress-fill" style="width:${goalPct}%;background:#3B82F6"></div></div></div><div class="goal-contribution"><input type="number" id="contrib-${goal.id}" placeholder="Add ($)"><button class="btn btn-sm btn-primary" onclick="contributeToGoal(${goal.id})">Add</button></div></div>`;
   }).join("");
+}
+
+function renderAchievements() {
+    const list = document.getElementById("completed-goals-list");
+    if (!list) return;
+
+    const completedGoals = state.savingsGoals.filter(g => g.saved >= g.target);
+
+    if (completedGoals.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>🏆 No completed goals yet. Keep saving!</p></div>`;
+        return;
+    }
+
+    list.innerHTML = completedGoals.map(goal => `
+        <div class="goal-item completed-achievement">
+            <div class="goal-header" style="margin-bottom: 0;">
+                <div class="goal-info">
+                    <h4 style="color: #D97706; display:flex; align-items:center; gap:0.5rem;">
+                        <span>🏆</span> ${escHtml(goal.name)}
+                    </h4>
+                    <p style="margin-top:0.25rem;">Target Reached: ${fmt(goal.target)}</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="background: #FEF3C7; color: #B45309; padding: 0.5rem 1rem; border-radius: 9999px; font-weight: bold; font-size: 0.875rem;">
+                        Completed
+                    </div>
+                    <button class="btn-delete" onclick="deleteGoal(${goal.id})" title="Delete Record"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+                </div>
+            </div>
+        </div>
+    `).join("");
 }
 
 function renderInsights() {
   const content = document.getElementById("insights-content");
   if (state.expenses.length === 0) { content.innerHTML = `<div class="empty-state"><p>📊 No data yet</p></div>`; return; }
   
-  // Set up chart UI container
   content.innerHTML = `
       <canvas id="expenseChart" style="width:100%; max-height:300px; margin-bottom: 2rem;"></canvas>
       <div id="insight-text-list"></div>
   `;
 
-  // Render Graph via Chart.js
   const ctx = document.getElementById('expenseChart');
   const monthlyData = {};
   
-  // Group all historical expenses by month
   state.expenses.forEach(e => {
       const month = e.date.slice(0, 7);
       monthlyData[month] = (monthlyData[month] || 0) + e.amount;
@@ -434,7 +490,6 @@ function renderInsights() {
       options: { responsive: true }
   });
 
-  // Calculate insights logic based on selected view month
   const spent = totalSpentThisMonth(); const budget = state.monthlyBudget;
   const insights = [];
   
@@ -452,6 +507,7 @@ function renderAll() {
   renderExpenses(); 
   renderBudget(); 
   renderSavings(); 
+  renderAchievements();
   renderInsights(); 
 }
 
@@ -462,6 +518,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs(); 
     initExpenseForm(); 
     initGoalForm(); 
-    load(); // Pulls everything from local storage and renders!
+    load(); 
   }
 });
