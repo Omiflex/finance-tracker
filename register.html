@@ -15,21 +15,18 @@
                 <p class="card-description">Join thousands of students managing money smarter</p>
             </div>
             <div class="card-body">
-                <!-- Ensure the form has the correct ID matching app.js -->
                 <form id="register-form">
-                    <div class="grid-2" style="margin-bottom: 0; grid-template-columns: 1fr; gap: 1rem;">
-                        <div class="form-group">
-                            <label for="first-name">First Name</label>
-                            <input type="text" id="first-name" placeholder="John" required>
-                        </div>
+                    <div class="form-group">
+                        <label for="first-name">First Name</label>
+                        <input type="text" id="first-name" placeholder="John" required>
                     </div>
                     <div class="form-group">
                         <label for="reg-email">Email Address</label>
-                        <input type="email" id="reg-email" placeholder="student@university.edu" required style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem;">
+                        <input type="email" id="reg-email" placeholder="student@university.edu" required>
                     </div>
                     <div class="form-group">
                         <label for="reg-password">Create Password</label>
-                        <input type="password" id="reg-password" placeholder="••••••••" required style="width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem;">
+                        <input type="password" id="reg-password" placeholder="••••••••" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label style="display: flex; align-items: flex-start; gap: 0.5rem; font-weight: normal; font-size: 0.875rem;">
@@ -37,7 +34,6 @@
                             I agree to the Terms of Service and Privacy Policy
                         </label>
                     </div>
-                    <!-- Must be a submit button, NOT a link -->
                     <button type="submit" class="btn btn-primary btn-block">
                         Create My Account
                     </button>
@@ -55,7 +51,6 @@
         </div>
     </div>
 
-    <!-- Connects to your LocalStorage Javascript -->
     <script src="app.js"></script>
 </body>
 </html>
